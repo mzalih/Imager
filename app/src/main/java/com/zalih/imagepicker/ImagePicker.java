@@ -137,6 +137,12 @@ public class ImagePicker {
                 int column_index = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA);
                 cursor.moveToFirst();
                 String selectedImagePath = cursor.getString(column_index);
+                if(selectedImagePath.startsWith("http://")||selectedImagePath.startsWith("https://")){
+                        if(listener != null){
+                            listener.onLoad(selectedImagePath);
+                            return;
+                        }
+                }
                 Bitmap bm;
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inJustDecodeBounds = true;
@@ -174,6 +180,7 @@ public class ImagePicker {
     }
     public interface OnLoadListener{
         public void onLoad(Bitmap imageBitmap);
+         public void onLoad(String url);
         public void onError();
     };
 
