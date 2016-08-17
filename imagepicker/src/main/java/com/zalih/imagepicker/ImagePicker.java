@@ -106,6 +106,17 @@ public class ImagePicker {
         });
         builder.show();
     }
+    private void getImage(Intent data){
+            Uri uri = data.getData();
+            try {
+                 image = MediaStore.Images.Media.getBitmap(activity.getContentResolver(), uri);
+                // Log.d(TAG, String.valueOf(bitmap));
+    
+            } catch (IOException e) {
+                e.printStackTrace();
+                loadImage(data);
+            }
+        }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
@@ -128,33 +139,67 @@ public class ImagePicker {
                 }
                 image = thumbnail;
                 setImage();
-            } else if (requestCode == SELECT_FILE) {
-                Uri selectedImageUri = data.getData();
-
-                String[] projection = {MediaStore.MediaColumns.DATA};
-                Cursor cursor = activity.managedQuery(selectedImageUri, projection, null, null,
-                        null);
-                int column_index = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA);
-                cursor.moveToFirst();
-                String selectedImagePath = cursor.getString(column_index);
-                Bitmap bm;
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inJustDecodeBounds = true;
-                BitmapFactory.decodeFile(selectedImagePath, options);
-                final int REQUIRED_SIZE = 200;
-                int scale = 1;
-                while (options.outWidth / scale / 2 >= REQUIRED_SIZE
-                        && options.outHeight / scale / 2 >= REQUIRED_SIZE)
-                    scale *= 2;
-                options.inSampleSize = scale;
-                options.inJustDecodeBounds = false;
-                bm = BitmapFactory.decodeFile(selectedImagePath, options);
-                image =bm;
+            } else {
+           if(listener != null) {
+               try {
+                   listener.onLoad(imageUrl);
+               }catch (Exception e){
+                        e.printStackTrace();
+               }
+           }
+           image = BitmapFactory.decodeFile(imageUrl.toString());
+           if(image == null){
+               getImage(data);
+           }
+           setImage();
+       } else if (requestCode == SELECT_FILE) {
+           getImage(data);
                 setImage();
             }
         }
 
+    private void loadImage(Intent data){
+        try {
+            Uri selectedImageUri = data.getData();
+            String[] projection = {MediaStore.MediaColumns.DATA};
+            Cursor cursor = activity.getContentResolver().query(selectedImageUri, projection, null, null,
+                    null);
+            int column_index = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA);
+            cursor.moveToFirst();
+            String selectedImagePath = cursor.getString(column_index);
+            if (selectedImagePath.startsWith("http://") || selectedImagePath.startsWith("https://")) {
+                if (listener != null) {
+                    listener.onLoad(selectedImagePath);
+                    return;
+                }
+            } else {
+                if (listener != null) {
+                    try {
+                        listener.onLoad((selectedImageUri));
+                    } catch (Exception e) {
+
+                    }
+                }
+            }
+            Bitmap bm;
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(selectedImagePath, options);
+            final int REQUIRED_SIZE = 200;
+            int scale = 1;
+            while (options.outWidth / scale / 2 >= REQUIRED_SIZE
+                    && options.outHeight / scale / 2 >= REQUIRED_SIZE)
+                scale *= 2;
+            options.inSampleSize = scale;
+            options.inJustDecodeBounds = false;
+            bm = BitmapFactory.decodeFile(selectedImagePath, options);
+            image = bm;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
+
     private void setImage(){
         try{
             if(imageView!= null && image != null ){
